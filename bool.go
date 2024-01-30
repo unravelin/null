@@ -24,36 +24,32 @@ type Bool struct {
 	sql.NullBool
 }
 
-func True() Bool {
-	return B(true)
-}
+func True() Bool { return B(true) }
 
-func False() Bool {
-	return B(false)
-}
+func False() Bool { return B(false) }
 
 // NewBool creates a new Bool
-func NewBool(b bool, valid bool) Bool {
+func NewBool[T ~bool](b T, valid bool) Bool {
 	return Bool{
 		NullBool: sql.NullBool{
-			Bool:  b,
+			Bool:  bool(b),
 			Valid: valid,
 		},
 	}
 }
 
 // B creates a new Bool that will always be valid.
-func B(b bool) Bool {
+func B[T ~bool](b T) Bool {
 	return BoolFrom(b)
 }
 
 // BoolFrom creates a new Bool that will always be valid.
-func BoolFrom(b bool) Bool {
+func BoolFrom[T ~bool](b T) Bool {
 	return NewBool(b, true)
 }
 
 // BoolFromPtr creates a new Bool that will be null if f is nil.
-func BoolFromPtr(b *bool) Bool {
+func BoolFromPtr[T ~bool](b *T) Bool {
 	if b == nil {
 		return NewBool(false, false)
 	}

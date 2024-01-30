@@ -35,7 +35,8 @@ func TestStringFromPtr(t *testing.T) {
 	str := StringFromPtr(sptr)
 	assertStr(t, str, "StringFromPtr() string")
 
-	null := StringFromPtr(nil)
+	sptr = nil
+	null := StringFromPtr(sptr)
 	assertNullStr(t, null, "StringFromPtr(nil)")
 }
 
@@ -147,7 +148,8 @@ func TestMarshalString(t *testing.T) {
 	maybePanic(err)
 	assertJSONEquals(t, data, "", "string marshal text")
 
-	null := StringFromPtr(nil)
+	var sptr *string
+	null := StringFromPtr(sptr)
 	data, err = json.Marshal(null)
 	maybePanic(err)
 	assertJSONEquals(t, data, `null`, "null json marshal")
@@ -186,7 +188,8 @@ func TestStringIsZero(t *testing.T) {
 		t.Errorf("IsZero() should be false")
 	}
 
-	null := StringFromPtr(nil)
+	var sptr *string
+	null := StringFromPtr(sptr)
 	if !null.IsZero() {
 		t.Errorf("IsZero() should be true")
 	}
@@ -247,6 +250,19 @@ func TestStringEqual(t *testing.T) {
 	str1 = NewString("foo", true)
 	str2 = NewString("bar", true)
 	assertStringEqualIsFalse(t, str1, str2)
+}
+
+func TestUnderlyingString(t *testing.T) {
+	type foo string
+	const val string = "foo!"
+	f := foo(val)
+	nullF := S(f)
+	if !nullF.Valid {
+		t.Fatalf("expected the null.String to be valid")
+	}
+	if act := nullF.String; val != act {
+		t.Fatalf("expected %s, but given %s", val, act)
+	}
 }
 
 func maybePanic(err error) {

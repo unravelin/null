@@ -22,29 +22,29 @@ type Float struct {
 }
 
 // NewFloat creates a new Float
-func NewFloat(f float64, valid bool) Float {
+func NewFloat[T ~float64](f T, valid bool) Float {
 	return Float{
 		NullFloat64: sql.NullFloat64{
-			Float64: f,
+			Float64: float64(f),
 			Valid:   valid,
 		},
 	}
 }
 
 // F creates a new Float that will always be valid.
-func F(f float64) Float {
+func F[T ~float64](f T) Float {
 	return FloatFrom(f)
 }
 
 // FloatFrom creates a new Float that will always be valid.
-func FloatFrom(f float64) Float {
+func FloatFrom[T ~float64](f T) Float {
 	return NewFloat(f, true)
 }
 
 // FloatFromPtr creates a new Float that be null if f is nil.
-func FloatFromPtr(f *float64) Float {
+func FloatFromPtr[T ~float64](f *T) Float {
 	if f == nil {
-		return NewFloat(0, false)
+		return NewFloat(float64(0), false)
 	}
 	return NewFloat(*f, true)
 }

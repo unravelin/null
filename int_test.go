@@ -35,8 +35,22 @@ func TestIntFromPtr(t *testing.T) {
 	i := IntFromPtr(iptr)
 	assertInt(t, i, "IntFromPtr()")
 
-	null := IntFromPtr(nil)
+	iptr = nil
+	null := IntFromPtr(iptr)
 	assertNullInt(t, null, "IntFromPtr(nil)")
+}
+
+func TestUnderlyingInt(t *testing.T) {
+	type foo int
+	const val int64 = 1711
+	f := foo(val)
+	nullF := I(f)
+	if !nullF.Valid {
+		t.Fatalf("expected the null.Int to be valid")
+	}
+	if act := nullF.Int64; val != act {
+		t.Fatalf("expected %d, but given %d", val, act)
+	}
 }
 
 func TestIntUnmarshal(t *testing.T) {
@@ -55,7 +69,7 @@ func TestIntUnmarshal(t *testing.T) {
 			exp: IntFrom(12345),
 		},
 		{
-			in: []byte(` "12345"  	 `),
+			in:  []byte(` "12345"  	 `),
 			exp: IntFrom(12345),
 		},
 		{
