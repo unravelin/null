@@ -15,7 +15,6 @@ import (
 var (
 	floatJSON           = []byte(`1.2345`)
 	floatJSONString     = []byte(`"1.2345"`)
-	floatBlankJSON      = []byte(`""`)
 	nullFloatJSON       = []byte(`{"Float64":1.2345,"Valid":true}`)
 	nullFloatJSONString = []byte(`{"Float64":"1.2345","Valid":true}`)
 )
@@ -56,7 +55,7 @@ func TestUnmarshalFloat(t *testing.T) {
 			exp: FloatFrom(1.2345),
 		},
 		{
-			in: []byte(` "1.2345"  	 `),
+			in:  []byte(` "1.2345"  	 `),
 			exp: FloatFrom(1.2345),
 		},
 		{

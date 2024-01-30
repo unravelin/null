@@ -11,7 +11,6 @@ import (
 
 var (
 	boolJSON     = []byte(`true`)
-	falseJSON    = []byte(`false`)
 	nullBoolJSON = []byte(`{"Bool":true,"Valid":true}`)
 )
 
