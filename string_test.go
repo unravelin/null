@@ -3,7 +3,7 @@ package null
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/mailru/easyjson"
@@ -280,7 +280,7 @@ func BenchmarkMarshalNullString(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(b *testing.PB) {
 		var ns String
-		enc := json.NewEncoder(ioutil.Discard)
+		enc := json.NewEncoder(io.Discard)
 		for b.Next() {
 			enc.Encode(&ns)
 		}
