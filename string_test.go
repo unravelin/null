@@ -3,7 +3,7 @@ package null
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/mailru/easyjson"
@@ -18,10 +18,6 @@ var (
 	nullJSON    = []byte(`null`)
 	invalidJSON = []byte(`:)`)
 )
-
-type stringInStruct struct {
-	Test String `json:"test,omitempty"`
-}
 
 func TestStringFrom(t *testing.T) {
 	str := StringFrom("test")
@@ -39,7 +35,8 @@ func TestStringFromPtr(t *testing.T) {
 	str := StringFromPtr(sptr)
 	assertStr(t, str, "StringFromPtr() string")
 
-	null := StringFromPtr(nil)
+	sptr = nil
+	null := StringFromPtr(sptr)
 	assertNullStr(t, null, "StringFromPtr(nil)")
 }
 
@@ -151,7 +148,8 @@ func TestMarshalString(t *testing.T) {
 	maybePanic(err)
 	assertJSONEquals(t, data, "", "string marshal text")
 
-	null := StringFromPtr(nil)
+	var sptr *string
+	null := StringFromPtr(sptr)
 	data, err = json.Marshal(null)
 	maybePanic(err)
 	assertJSONEquals(t, data, `null`, "null json marshal")
@@ -159,14 +157,6 @@ func TestMarshalString(t *testing.T) {
 	maybePanic(err)
 	assertJSONEquals(t, data, "", "string marshal text")
 }
-
-// Tests omitempty... broken until Go 1.4
-// func TestMarshalStringInStruct(t *testing.T) {
-// 	obj := stringInStruct{Test: StringFrom("")}
-// 	data, err := json.Marshal(obj)
-// 	maybePanic(err)
-// 	assertJSONEquals(t, data, `{}`, "null string in struct")
-// }
 
 func TestStringPointer(t *testing.T) {
 	str := StringFrom("test")
@@ -198,7 +188,8 @@ func TestStringIsZero(t *testing.T) {
 		t.Errorf("IsZero() should be false")
 	}
 
-	null := StringFromPtr(nil)
+	var sptr *string
+	null := StringFromPtr(sptr)
 	if !null.IsZero() {
 		t.Errorf("IsZero() should be true")
 	}
@@ -261,6 +252,19 @@ func TestStringEqual(t *testing.T) {
 	assertStringEqualIsFalse(t, str1, str2)
 }
 
+func TestUnderlyingString(t *testing.T) {
+	type foo string
+	const val string = "foo!"
+	f := foo(val)
+	nullF := S(f)
+	if !nullF.Valid {
+		t.Fatalf("expected the null.String to be valid")
+	}
+	if act := nullF.String; val != act {
+		t.Fatalf("expected %s, but given %s", val, act)
+	}
+}
+
 func maybePanic(err error) {
 	if err != nil {
 		panic(err)
@@ -292,7 +296,7 @@ func BenchmarkMarshalNullString(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(b *testing.PB) {
 		var ns String
-		enc := json.NewEncoder(ioutil.Discard)
+		enc := json.NewEncoder(io.Discard)
 		for b.Next() {
 			enc.Encode(&ns)
 		}

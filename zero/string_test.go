@@ -15,10 +15,6 @@ var (
 	invalidJSON = []byte(`:)`)
 )
 
-type stringInStruct struct {
-	Test String `json:"test,omitempty"`
-}
-
 func TestStringFrom(t *testing.T) {
 	str := StringFrom("test")
 	assertStr(t, str, "StringFrom() string")
@@ -89,14 +85,6 @@ func TestMarshalString(t *testing.T) {
 	maybePanic(err)
 	assertJSONEquals(t, data, `""`, "empty json marshal")
 }
-
-// Tests omitempty... broken until Go 1.4
-// func TestMarshalStringInStruct(t *testing.T) {
-// 	obj := stringInStruct{Test: StringFrom("")}
-// 	data, err := json.Marshal(obj)
-// 	maybePanic(err)
-// 	assertJSONEquals(t, data, `{}`, "null string in struct")
-// }
 
 func TestStringPointer(t *testing.T) {
 	str := StringFrom("test")

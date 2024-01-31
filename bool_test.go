@@ -11,7 +11,6 @@ import (
 
 var (
 	boolJSON     = []byte(`true`)
-	falseJSON    = []byte(`false`)
 	nullBoolJSON = []byte(`{"Bool":true,"Valid":true}`)
 )
 
@@ -31,7 +30,8 @@ func TestBoolFromPtr(t *testing.T) {
 	b := BoolFromPtr(bptr)
 	assertBool(t, b, "BoolFromPtr()")
 
-	null := BoolFromPtr(nil)
+	bptr = nil
+	null := BoolFromPtr(bptr)
 	assertNullBool(t, null, "BoolFromPtr(nil)")
 }
 
@@ -216,6 +216,19 @@ func TestBoolEqual(t *testing.T) {
 	b1 = NewBool(true, true)
 	b2 = NewBool(false, true)
 	assertBoolEqualIsFalse(t, b1, b2)
+}
+
+func TestUnderlyingBool(t *testing.T) {
+	type foo bool
+	const val bool = true
+	f := foo(val)
+	nullF := B(f)
+	if !nullF.Valid {
+		t.Fatalf("expected the null.Bool to be valid")
+	}
+	if act := nullF.Bool; val != act {
+		t.Fatalf("expected %v, but given %v", val, act)
+	}
 }
 
 func assertBool(t *testing.T, b Bool, from string) {

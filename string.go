@@ -20,23 +20,33 @@ type String struct {
 	sql.NullString
 }
 
+// NewString creates a new String
+func NewString[T ~string](s T, valid bool) String {
+	return String{
+		NullString: sql.NullString{
+			String: string(s),
+			Valid:  valid,
+		},
+	}
+}
+
 // S creates a new String that will never be blank.
-func S(s string) String {
+func S[T ~string](s T) String {
 	return StringFrom(s)
 }
 
 // ZS creates a new String that is valid if s is not zero.
-func ZS(s string) String {
+func ZS[T ~string](s T) String {
 	return NewString(s, s != "")
 }
 
 // StringFrom creates a new String that will never be blank.
-func StringFrom(s string) String {
+func StringFrom[T ~string](s T) String {
 	return NewString(s, true)
 }
 
 // StringFromPtr creates a new String that be null if s is nil.
-func StringFromPtr(s *string) String {
+func StringFromPtr[T ~string](s *T) String {
 	if s == nil {
 		return NewString("", false)
 	}
@@ -49,16 +59,6 @@ func (s String) ValueOrZero() string {
 		return ""
 	}
 	return s.String
-}
-
-// NewString creates a new String
-func NewString(s string, valid bool) String {
-	return String{
-		NullString: sql.NullString{
-			String: s,
-			Valid:  valid,
-		},
-	}
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

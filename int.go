@@ -20,27 +20,27 @@ type Int struct {
 }
 
 // NewInt creates a new Int
-func NewInt(i int64, valid bool) Int {
+func NewInt[T ~int64 | ~int](i T, valid bool) Int {
 	return Int{
 		NullInt64: sql.NullInt64{
-			Int64: i,
+			Int64: int64(i),
 			Valid: valid,
 		},
 	}
 }
 
 // I creates a new Int that will always be valid.
-func I(i int64) Int {
+func I[T ~int64 | ~int](i T) Int {
 	return IntFrom(i)
 }
 
 // IntFrom creates a new Int that will always be valid.
-func IntFrom(i int64) Int {
+func IntFrom[T ~int64 | ~int](i T) Int {
 	return NewInt(i, true)
 }
 
 // IntFromPtr creates a new Int that be null if i is nil.
-func IntFromPtr(i *int64) Int {
+func IntFromPtr[T ~int64 | ~int](i *T) Int {
 	if i == nil {
 		return NewInt(0, false)
 	}

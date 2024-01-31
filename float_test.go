@@ -15,7 +15,6 @@ import (
 var (
 	floatJSON           = []byte(`1.2345`)
 	floatJSONString     = []byte(`"1.2345"`)
-	floatBlankJSON      = []byte(`""`)
 	nullFloatJSON       = []byte(`{"Float64":1.2345,"Valid":true}`)
 	nullFloatJSONString = []byte(`{"Float64":"1.2345","Valid":true}`)
 )
@@ -24,9 +23,9 @@ func TestFloatFrom(t *testing.T) {
 	f := FloatFrom(1.2345)
 	assertFloat(t, f, "FloatFrom()")
 
-	zero := FloatFrom(0)
+	zero := FloatFrom(0.0)
 	if !zero.Valid {
-		t.Error("FloatFrom(0)", "is invalid, but should be valid")
+		t.Error("FloatFrom(0.0)", "is invalid, but should be valid")
 	}
 }
 
@@ -36,8 +35,22 @@ func TestFloatFromPtr(t *testing.T) {
 	f := FloatFromPtr(iptr)
 	assertFloat(t, f, "FloatFromPtr()")
 
-	null := FloatFromPtr(nil)
+	iptr = nil
+	null := FloatFromPtr(iptr)
 	assertNullFloat(t, null, "FloatFromPtr(nil)")
+}
+
+func TestUnderlyingFloat(t *testing.T) {
+	type foo float64
+	const val float64 = 0.5772156649
+	f := foo(val)
+	nullF := F(f)
+	if !nullF.Valid {
+		t.Fatalf("expected the null.Float to be valid")
+	}
+	if act := nullF.Float64; val != act {
+		t.Fatalf("expected %f, but given %f", val, act)
+	}
 }
 
 func TestUnmarshalFloat(t *testing.T) {
@@ -56,7 +69,7 @@ func TestUnmarshalFloat(t *testing.T) {
 			exp: FloatFrom(1.2345),
 		},
 		{
-			in: []byte(` "1.2345"  	 `),
+			in:  []byte(` "1.2345"  	 `),
 			exp: FloatFrom(1.2345),
 		},
 		{
@@ -197,7 +210,7 @@ func TestMarshalFloat(t *testing.T) {
 	assertJSONEquals(t, data, "1.2345", "non-empty json marshal")
 
 	// invalid values should be encoded as null
-	null := NewFloat(0, false)
+	null := NewFloat(0.0, false)
 	data, err = json.Marshal(null)
 	maybePanic(err)
 	assertJSONEquals(t, data, "null", "null json marshal")
@@ -210,7 +223,7 @@ func TestMarshalFloatText(t *testing.T) {
 	assertJSONEquals(t, data, "1.2345", "non-empty text marshal")
 
 	// invalid values should be encoded as null
-	null := NewFloat(0, false)
+	null := NewFloat(0.0, false)
 	data, err = null.MarshalText()
 	maybePanic(err)
 	assertJSONEquals(t, data, "", "null text marshal")
@@ -223,7 +236,7 @@ func TestFloatPointer(t *testing.T) {
 		t.Errorf("bad %s float: %#v ≠ %v\n", "pointer", ptr, 1.2345)
 	}
 
-	null := NewFloat(0, false)
+	null := NewFloat(0.0, false)
 	ptr = null.Ptr()
 	if ptr != nil {
 		t.Errorf("bad %s float: %#v ≠ %s\n", "nil pointer", ptr, "nil")
@@ -236,19 +249,19 @@ func TestFloatIsZero(t *testing.T) {
 		t.Errorf("IsZero() should be false")
 	}
 
-	null := NewFloat(0, false)
+	null := NewFloat(0.0, false)
 	if !null.IsZero() {
 		t.Errorf("IsZero() should be true")
 	}
 
-	zero := NewFloat(0, true)
+	zero := NewFloat(0.0, true)
 	if zero.IsZero() {
 		t.Errorf("IsZero() should be false")
 	}
 }
 
 func TestFloatSetValid(t *testing.T) {
-	change := NewFloat(0, false)
+	change := NewFloat(0.0, false)
 	assertNullFloat(t, change, "SetValid()")
 	change.SetValid(1.2345)
 	assertFloat(t, change, "SetValid()")
@@ -298,28 +311,28 @@ func TestFloatValueOrZero(t *testing.T) {
 }
 
 func TestFloatEqual(t *testing.T) {
-	f1 := NewFloat(10, false)
-	f2 := NewFloat(10, false)
+	f1 := NewFloat(10.0, false)
+	f2 := NewFloat(10.0, false)
 	assertFloatEqualIsTrue(t, f1, f2)
 
-	f1 = NewFloat(10, false)
-	f2 = NewFloat(20, false)
+	f1 = NewFloat(10.0, false)
+	f2 = NewFloat(20.0, false)
 	assertFloatEqualIsTrue(t, f1, f2)
 
-	f1 = NewFloat(10, true)
-	f2 = NewFloat(10, true)
+	f1 = NewFloat(10.0, true)
+	f2 = NewFloat(10.0, true)
 	assertFloatEqualIsTrue(t, f1, f2)
 
-	f1 = NewFloat(10, true)
-	f2 = NewFloat(10, false)
+	f1 = NewFloat(10.0, true)
+	f2 = NewFloat(10.0, false)
 	assertFloatEqualIsFalse(t, f1, f2)
 
-	f1 = NewFloat(10, false)
-	f2 = NewFloat(10, true)
+	f1 = NewFloat(10.0, false)
+	f2 = NewFloat(10.0, true)
 	assertFloatEqualIsFalse(t, f1, f2)
 
-	f1 = NewFloat(10, true)
-	f2 = NewFloat(20, true)
+	f1 = NewFloat(10.0, true)
+	f2 = NewFloat(20.0, true)
 	assertFloatEqualIsFalse(t, f1, f2)
 }
 
