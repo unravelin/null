@@ -1,4 +1,4 @@
-module github.com/unravelin/null/v4
+module github.com/unravelin/null/v5
 
 go 1.18
 
