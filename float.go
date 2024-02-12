@@ -130,6 +130,10 @@ func (f *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
 			case "float64", "Float64":
 				// Read float from raw.
 				data := w.Raw()
+				if len(data) == 0 {
+					f.Valid = false
+					return
+				}
 				if data[0] == '"' {
 					data = data[1 : len(data)-1]
 				}
@@ -155,6 +159,10 @@ func (f *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
 
 	// Read float from raw.
 	data := w.Raw()
+	if len(data) == 0 {
+		f.Valid = false
+		return
+	}
 	if data[0] == '"' {
 		data = data[1 : len(data)-1]
 	}
