@@ -65,7 +65,7 @@ func (b Bool) ValueOrZero() bool {
 // It supports number and null input.
 // 0 will not be considered a null Bool.
 func (b *Bool) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) {
+	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
 		b.Valid = false
 		return nil
 	}

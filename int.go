@@ -59,7 +59,7 @@ func (i Int) ValueOrZero() int64 {
 // It supports number, string, and null input.
 // 0 will not be considered a null Int.
 func (i *Int) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) {
+	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
 		i.Valid = false
 		return nil
 	}

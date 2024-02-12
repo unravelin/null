@@ -50,6 +50,12 @@ func TestUnmarshalBool(t *testing.T) {
 	maybePanic(err)
 	assertNullBool(t, null, "null json")
 
+	var empty Bool
+	var data []byte
+	err = empty.UnmarshalJSON(data)
+	maybePanic(err)
+	assertNullBool(t, empty, "null json")
+
 	var badType Bool
 	err = json.Unmarshal(intJSON, &badType)
 	if err == nil {
