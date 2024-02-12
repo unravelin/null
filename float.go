@@ -61,39 +61,39 @@ func (f Float) ValueOrZero() float64 {
 // It supports number and null input.
 // 0 will not be considered a null Float.
 // It also supports unmarshalling a sql.NullFloat64.
-func (i *Float) UnmarshalJSON(data []byte) error {
+func (f *Float) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, nullLiteral) {
-		i.Valid = false
+		f.Valid = false
 		return nil
 	}
 
 	if len(data) == 0 {
-		i.Valid = false
+		f.Valid = false
 		return nil
 	}
 
 	if data[0] == '{' {
 		// Try the struct form of Float.
 		type basicFloat Float
-		var ii basicFloat
-		if json.Unmarshal(data, &ii) == nil {
-			*i = Float(ii)
+		var bf basicFloat
+		if json.Unmarshal(data, &bf) == nil {
+			*f = Float(bf)
 			return nil
 		}
 
 		// Try the struct form of Float, but with a string Float64.
-		var si struct {
+		var sf struct {
 			Float64 string
 			Valid   bool
 		}
-		if err := json.Unmarshal(data, &si); err != nil {
+		if err := json.Unmarshal(data, &sf); err != nil {
 			return err
 		}
-		i.Valid = si.Valid
-		if si.Valid {
+		f.Valid = sf.Valid
+		if sf.Valid {
 			var err error
-			i.Float64, err = strconv.ParseFloat(si.Float64, 64)
-			i.Valid = (err == nil)
+			f.Float64, err = strconv.ParseFloat(sf.Float64, 64)
+			f.Valid = (err == nil)
 		}
 		return nil
 	}
@@ -104,16 +104,16 @@ func (i *Float) UnmarshalJSON(data []byte) error {
 	}
 
 	var err error
-	i.Float64, err = strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
-	i.Valid = (err == nil)
+	f.Float64, err = strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
+	f.Valid = (err == nil)
 	return err
 }
 
 // UnmarshalEasyJSON is an easy-JSON specific decoder, that should be more efficient than the standard one.
-func (i *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
+func (f *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
 	if w.IsNull() {
 		w.Skip()
-		i.Valid = false
+		f.Valid = false
 		return
 	}
 	if w.IsDelim('{') {
@@ -133,20 +133,20 @@ func (i *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
 				if data[0] == '"' {
 					data = data[1 : len(data)-1]
 				}
-				f, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
+				fVal, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
 				if err != nil {
 					w.AddError(&jlexer.LexerError{
 						Reason: err.Error(),
 						Data:   string(data),
 					})
-					i.Float64 = 0
-					i.Valid = false
+					f.Float64 = 0
+					f.Valid = false
 					return
 				}
-				i.Float64 = f
-				i.Valid = true
+				f.Float64 = fVal
+				f.Valid = true
 			case "valid", "Valid":
-				i.Valid = w.Bool()
+				f.Valid = w.Bool()
 			}
 			w.WantComma()
 		}
@@ -158,18 +158,18 @@ func (i *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
 	if data[0] == '"' {
 		data = data[1 : len(data)-1]
 	}
-	f, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
+	fVal, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
 	if err != nil {
 		w.AddError(&jlexer.LexerError{
 			Reason: err.Error(),
 			Data:   string(data),
 		})
-		i.Float64 = 0
-		i.Valid = false
+		f.Float64 = 0
+		f.Valid = false
 		return
 	}
-	i.Float64 = f
-	i.Valid = true
+	f.Float64 = fVal
+	f.Valid = true
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
