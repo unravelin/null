@@ -64,12 +64,7 @@ func (s String) ValueOrZero() string {
 // UnmarshalJSON implements json.Unmarshaler.
 // It supports string and null input. Blank string input does not produce a null String.
 func (s *String) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) {
-		s.Valid = false
-		return nil
-	}
-
-	if len(data) == 0 {
+	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
 		s.Valid = false
 		return nil
 	}

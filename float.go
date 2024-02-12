@@ -62,12 +62,7 @@ func (f Float) ValueOrZero() float64 {
 // 0 will not be considered a null Float.
 // It also supports unmarshalling a sql.NullFloat64.
 func (f *Float) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) {
-		f.Valid = false
-		return nil
-	}
-
-	if len(data) == 0 {
+	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
 		f.Valid = false
 		return nil
 	}
