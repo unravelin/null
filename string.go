@@ -69,6 +69,11 @@ func (s *String) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if len(data) == 0 {
+		s.Valid = false
+		return nil
+	}
+
 	if data[0] == '{' {
 		if err := json.Unmarshal(data, &s.NullString); err != nil {
 			return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)

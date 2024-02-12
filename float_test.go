@@ -2,6 +2,7 @@ package null
 
 import (
 	"encoding/json"
+	"io"
 	"math"
 	"reflect"
 	"strconv"
@@ -79,6 +80,11 @@ func TestUnmarshalFloat(t *testing.T) {
 		{
 			in:  nullFloatJSONString,
 			exp: FloatFrom(1.2345),
+		},
+		{
+			in:             []byte{},
+			expErrType:     reflect.TypeOf((*json.SyntaxError)(nil)),
+			expErrTypeEasy: reflect.TypeOf(io.EOF),
 		},
 		{
 			in: nullJSON,

@@ -67,6 +67,11 @@ func (i *Float) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if len(data) == 0 {
+		i.Valid = false
+		return nil
+	}
+
 	if data[0] == '{' {
 		// Try the struct form of Float.
 		type basicFloat Float

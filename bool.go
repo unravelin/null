@@ -70,6 +70,11 @@ func (b *Bool) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if len(data) == 0 {
+		b.Valid = false
+		return nil
+	}
+
 	if data[0] == '{' {
 		if err := json.Unmarshal(data, &b.NullBool); err != nil {
 			return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)

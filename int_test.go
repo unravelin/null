@@ -2,6 +2,7 @@ package null
 
 import (
 	"encoding/json"
+	"io"
 	"math"
 	"reflect"
 	"strconv"
@@ -79,6 +80,11 @@ func TestIntUnmarshal(t *testing.T) {
 		{
 			in:  nullIntJSONString,
 			exp: IntFrom(12345),
+		},
+		{
+			in:             []byte{},
+			expErrType:     reflect.TypeOf((*json.SyntaxError)(nil)),
+			expErrTypeEasy: reflect.TypeOf(io.EOF),
 		},
 		{
 			in: nullJSON,
