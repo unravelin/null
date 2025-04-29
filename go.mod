@@ -1,10 +1,10 @@
-module github.com/unravelin/null/v5
+module github.com/unravelin/null
 
-go 1.18
+go 1.24
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/mailru/easyjson v0.7.7
+	github.com/mailru/easyjson v0.9.0
 	github.com/stretchr/testify v1.8.4
 )
 
