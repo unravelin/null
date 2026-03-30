@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"unsafe"
-
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
 )
 
 // Int is an nullable int64.
@@ -100,69 +97,6 @@ func (i *Int) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-// UnmarshalEasyJSON is an easy-JSON specific decoder, that should be more efficient than the standard one.
-func (i *Int) UnmarshalEasyJSON(w *jlexer.Lexer) {
-	if w.IsNull() {
-		w.Skip()
-		i.Valid = false
-		return
-	}
-	if w.IsDelim('{') {
-		w.Skip()
-		for w.Ok() && !w.IsDelim('}') {
-			key := w.UnsafeString()
-			w.WantColon()
-			if w.IsNull() {
-				w.Skip()
-				w.WantComma()
-				continue
-			}
-			switch key {
-			case "int64", "Int64":
-				// Read int from raw.
-				data := w.Raw()
-				if data[0] == '"' {
-					data = data[1 : len(data)-1]
-				}
-				v, err := strconv.ParseInt(*(*string)(unsafe.Pointer(&data)), 10, 64)
-				if err != nil {
-					w.AddError(&jlexer.LexerError{
-						Reason: err.Error(),
-						Data:   string(data),
-					})
-					i.Int64 = 0
-					i.Valid = false
-					return
-				}
-				i.Int64 = v
-				i.Valid = true
-			case "valid", "Valid":
-				i.Valid = w.Bool()
-			}
-			w.WantComma()
-		}
-		return
-	}
-
-	// Read int from raw.
-	data := w.Raw()
-	if data[0] == '"' {
-		data = data[1 : len(data)-1]
-	}
-	v, err := strconv.ParseInt(*(*string)(unsafe.Pointer(&data)), 10, 64)
-	if err != nil {
-		w.AddError(&jlexer.LexerError{
-			Reason: err.Error(),
-			Data:   string(data),
-		})
-		i.Int64 = 0
-		i.Valid = false
-		return
-	}
-	i.Int64 = v
-	i.Valid = true
-}
-
 // UnmarshalText implements encoding.TextUnmarshaler.
 // It will unmarshal to a null Int if the input is blank.
 // It will return an error if the input is not an integer, blank, or "null".
@@ -187,15 +121,7 @@ func (i Int) MarshalJSON() ([]byte, error) {
 	if !i.Valid {
 		return nullLiteral, nil
 	}
-	return []byte(strconv.FormatInt(i.Int64, 10)), nil
-}
-
-func (i Int) MarshalEasyJSON(w *jwriter.Writer) {
-	if !i.Valid {
-		w.RawString("null")
-		return
-	}
-	w.Int64(i.Int64)
+	return strconv.AppendInt(nil, i.Int64, 10), nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
@@ -204,7 +130,7 @@ func (i Int) MarshalText() ([]byte, error) {
 	if !i.Valid {
 		return []byte{}, nil
 	}
-	return []byte(strconv.FormatInt(i.Int64, 10)), nil
+	return strconv.AppendInt(nil, i.Int64, 10), nil
 }
 
 // SetValid changes this Int's value and also sets it to be non-null.
