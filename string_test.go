@@ -5,9 +5,6 @@ import (
 	"errors"
 	"io"
 	"testing"
-
-	"github.com/mailru/easyjson"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -81,45 +78,6 @@ func TestUnmarshalString(t *testing.T) {
 		t.Errorf("expected wrapped json.SyntaxError, not %T", err)
 	}
 	assertNullStr(t, invalid, "invalid json")
-}
-
-func TestStringUnmarshalEasyJSON(t *testing.T) {
-	tests := []struct {
-		data string
-		exp  String
-	}{
-		{
-			data: "null",
-		},
-		{
-			data: `"hat"`,
-			exp:  StringFrom("hat"),
-		},
-		{
-			data: `""`,
-			exp:  StringFrom(""),
-		},
-		{
-			data: `{"String":"hat","Valid":true}`,
-			exp:  StringFrom("hat"),
-		},
-		{
-			data: `{"string":"hat","valid":true}`,
-			exp:  StringFrom("hat"),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.data, func(t *testing.T) {
-			var str String
-			assert.NoError(t, easyjson.Unmarshal([]byte(test.data), &str), "easyjson.Unmarshal")
-			assert.Equal(t, test.exp, str)
-
-			var str2 String
-			assert.NoError(t, json.Unmarshal([]byte(test.data), &str2), "json.Unmarshal")
-			assert.Equal(t, test.exp, str2)
-		})
-	}
 }
 
 func TestTextUnmarshalString(t *testing.T) {

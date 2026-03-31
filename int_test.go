@@ -2,15 +2,12 @@ package null
 
 import (
 	"encoding/json"
-	"io"
 	"math"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jlexer"
 )
 
 var (
@@ -56,10 +53,9 @@ func TestUnderlyingInt(t *testing.T) {
 
 func TestIntUnmarshal(t *testing.T) {
 	tests := []struct {
-		in             []byte
-		exp            Int
-		expErrType     reflect.Type
-		expErrTypeEasy reflect.Type
+		in         []byte
+		exp        Int
+		expErrType reflect.Type
 	}{
 		{
 			in:  intJSON,
@@ -82,27 +78,23 @@ func TestIntUnmarshal(t *testing.T) {
 			exp: IntFrom(12345),
 		},
 		{
-			in:             []byte{},
-			expErrType:     reflect.TypeOf((*json.SyntaxError)(nil)),
-			expErrTypeEasy: reflect.TypeOf(io.EOF),
+			in:         []byte{},
+			expErrType: reflect.TypeOf((*json.SyntaxError)(nil)),
 		},
 		{
 			in: nullJSON,
 		},
 		{
-			in:             boolJSON,
-			expErrType:     reflect.TypeOf((*strconv.NumError)(nil)),
-			expErrTypeEasy: reflect.TypeOf((*jlexer.LexerError)(nil)),
+			in:         boolJSON,
+			expErrType: reflect.TypeOf((*strconv.NumError)(nil)),
 		},
 		{
-			in:             invalidJSON,
-			expErrType:     reflect.TypeOf((*json.SyntaxError)(nil)),
-			expErrTypeEasy: reflect.TypeOf((*jlexer.LexerError)(nil)),
+			in:         invalidJSON,
+			expErrType: reflect.TypeOf((*json.SyntaxError)(nil)),
 		},
 		{
-			in:             []byte(`{"Int64":true,"Valid":true}`),
-			expErrType:     reflect.TypeOf((*json.UnmarshalTypeError)(nil)),
-			expErrTypeEasy: reflect.TypeOf((*jlexer.LexerError)(nil)),
+			in:         []byte(`{"Int64":true,"Valid":true}`),
+			expErrType: reflect.TypeOf((*json.UnmarshalTypeError)(nil)),
 		},
 	}
 
@@ -120,31 +112,6 @@ func TestIntUnmarshal(t *testing.T) {
 
 			} else if test.expErrType != nil {
 				t.Fatal("expected an error")
-			}
-			if diff := cmp.Diff(test.exp, i); diff != "" {
-				t.Fatalf("result not as expected. %s", diff)
-			}
-		})
-
-		t.Run(string(test.in)+"_easyjson", func(t *testing.T) {
-			var i Int
-			var err error
-			allocs := testing.AllocsPerRun(10, func() {
-				err = easyjson.Unmarshal(test.in, &i)
-			})
-			if err != nil {
-				if test.expErrTypeEasy == nil {
-					t.Fatal(err)
-				}
-				if reflect.TypeOf(err) != test.expErrTypeEasy {
-					t.Fatalf("error %s(%T) is not of type %s", err, err, test.expErrTypeEasy)
-				}
-
-			} else if test.expErrTypeEasy != nil {
-				t.Fatal("expected an error")
-			}
-			if test.expErrTypeEasy == nil && allocs > 0 {
-				t.Fatalf("easyjson made %.0f allocations unmarshalling %T from: %s", allocs, i, test.in)
 			}
 			if diff := cmp.Diff(test.exp, i); diff != "" {
 				t.Fatalf("result not as expected. %s", diff)
@@ -168,17 +135,6 @@ func BenchmarkIntUnmarshal(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				var ii Int
 				if err := json.Unmarshal(test, &ii); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-		b.Run("easy "+string(test), func(b *testing.B) {
-			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
-				w := &jlexer.Lexer{Data: test}
-				var ii Int
-				ii.UnmarshalEasyJSON(w)
-				if err := w.Error(); err != nil {
 					b.Fatal(err)
 				}
 			}

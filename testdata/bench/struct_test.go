@@ -4,17 +4,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mailru/easyjson"
-	jwriter "github.com/mailru/easyjson/jwriter"
 	"github.com/philpearl/plenc"
 	plnull "github.com/philpearl/plenc/null"
 	"github.com/unravelin/null"
 )
 
-var fuzzFuncs = []interface{}{
+var fuzzFuncs = []any{
 	func(a *null.Bool, c fuzz.Continue) {
 		a.Valid = c.RandBool()
 		if a.Valid {
@@ -47,45 +44,11 @@ var fuzzFuncs = []interface{}{
 	},
 }
 
-func TestEasyjson(t *testing.T) {
-	f := fuzz.New().Funcs(fuzzFuncs...)
-	for i := 0; i < 100; i++ {
-		var in, out pltest
-		f.Fuzz(&in)
-		data, err := easyjson.Marshal(&in)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err := easyjson.Unmarshal(data, &out); err != nil {
-			t.Fatal(err)
-		}
-
-		if diff := cmp.Diff(in, out); diff != "" {
-			t.Fatalf("values differ. %s", diff)
-		}
-	}
-}
-
 func BenchmarkSerialisation(b *testing.B) {
 	f := fuzz.New().Funcs(fuzzFuncs...)
 
 	var in pltest
 	f.Fuzz(&in)
-
-	b.Run("easyjson", func(b *testing.B) {
-		b.ReportAllocs()
-		b.RunParallel(func(pb *testing.PB) {
-			var w jwriter.Writer
-			var data []byte
-			for pb.Next() {
-				in.MarshalEasyJSON(&w)
-				data, _ := w.BuildBytes(data[:0])
-				var out pltest
-				easyjson.Unmarshal(data, &out)
-			}
-		})
-	})
 
 	b.Run("plenc", func(b *testing.B) {
 		plnull.RegisterCodecs()

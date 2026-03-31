@@ -2,9 +2,6 @@ package bench
 
 import "github.com/unravelin/null"
 
-//go:generate easyjson -pkg -no_std_marshalers
-
-//easyjson:json
 type pltest struct {
 	A  null.Bool   `plenc:"1"`
 	B  null.Float  `plenc:"2"`

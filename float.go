@@ -9,9 +9,6 @@ import (
 	"reflect"
 	"strconv"
 	"unsafe"
-
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
 )
 
 // Float is a nullable float64.
@@ -104,77 +101,6 @@ func (f *Float) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-// UnmarshalEasyJSON is an easy-JSON specific decoder, that should be more efficient than the standard one.
-func (f *Float) UnmarshalEasyJSON(w *jlexer.Lexer) {
-	if w.IsNull() {
-		w.Skip()
-		f.Valid = false
-		return
-	}
-	if w.IsDelim('{') {
-		w.Skip()
-		for w.Ok() && !w.IsDelim('}') {
-			key := w.UnsafeString()
-			w.WantColon()
-			if w.IsNull() {
-				w.Skip()
-				w.WantComma()
-				continue
-			}
-			switch key {
-			case "float64", "Float64":
-				// Read float from raw.
-				data := w.Raw()
-				if len(data) == 0 {
-					f.Valid = false
-					return
-				}
-				if data[0] == '"' {
-					data = data[1 : len(data)-1]
-				}
-				fVal, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
-				if err != nil {
-					w.AddError(&jlexer.LexerError{
-						Reason: err.Error(),
-						Data:   string(data),
-					})
-					f.Float64 = 0
-					f.Valid = false
-					return
-				}
-				f.Float64 = fVal
-				f.Valid = true
-			case "valid", "Valid":
-				f.Valid = w.Bool()
-			}
-			w.WantComma()
-		}
-		return
-	}
-
-	// Read float from raw.
-	data := w.Raw()
-	if len(data) == 0 {
-		f.Valid = false
-		return
-	}
-	if data[0] == '"' {
-		data = data[1 : len(data)-1]
-	}
-	fVal, err := strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
-	if err != nil {
-		w.AddError(&jlexer.LexerError{
-			Reason: err.Error(),
-			Data:   string(data),
-		})
-		f.Float64 = 0
-		f.Valid = false
-		return
-	}
-	f.Float64 = fVal
-	f.Valid = true
-}
-
 // UnmarshalText implements encoding.TextUnmarshaler.
 // It will unmarshal to a null Float if the input is blank.
 // It will return an error if the input is not an integer, blank, or "null".
@@ -205,15 +131,7 @@ func (f Float) MarshalJSON() ([]byte, error) {
 			Str:   strconv.FormatFloat(f.Float64, 'g', -1, 64),
 		}
 	}
-	return []byte(strconv.FormatFloat(f.Float64, 'f', -1, 64)), nil
-}
-
-func (i Float) MarshalEasyJSON(w *jwriter.Writer) {
-	if !i.Valid {
-		w.RawString("null")
-		return
-	}
-	w.Float64(i.Float64)
+	return strconv.AppendFloat(nil, f.Float64, 'f', -1, 64), nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
@@ -222,7 +140,7 @@ func (f Float) MarshalText() ([]byte, error) {
 	if !f.Valid {
 		return []byte{}, nil
 	}
-	return []byte(strconv.FormatFloat(f.Float64, 'f', -1, 64)), nil
+	return strconv.AppendFloat(nil, f.Float64, 'f', -1, 64), nil
 }
 
 // SetValid changes this Float's value and also sets it to be non-null.
