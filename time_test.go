@@ -34,15 +34,16 @@ func TestUnmarshalTimeJSON(t *testing.T) {
 
 	var fromObject Time
 	err = json.Unmarshal(timeObject, &fromObject)
-	if err == nil {
-		t.Fatal("expected error")
+	if err != nil {
+		t.Fatal(err)
 	}
+	assertTime(t, ti, "UnmarshalJSON() json")
 
 	var nullFromObj Time
-	err = json.Unmarshal(nullObject, &nullFromObj)
-	if err == nil {
-		t.Fatal("expected error")
+	if err := json.Unmarshal(nullObject, &nullFromObj); err != nil {
+		t.Fatal(err)
 	}
+	assertNullTime(t, null, "null time json")
 
 	var invalid Time
 	err = json.Unmarshal(invalidJSON, &invalid)
@@ -53,9 +54,8 @@ func TestUnmarshalTimeJSON(t *testing.T) {
 	assertNullTime(t, invalid, "invalid from object json")
 
 	var bad Time
-	err = json.Unmarshal(badObject, &bad)
-	if err == nil {
-		t.Errorf("expected error: bad object")
+	if err := json.Unmarshal(badObject, &bad); err != nil {
+		t.Error(err)
 	}
 	assertNullTime(t, bad, "bad from object json")
 

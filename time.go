@@ -86,7 +86,8 @@ func (t *Time) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 		t.Valid = err == nil
 		return err
 
-	// Note that Time is different and we don't support decoding from an object
+	case jsontext.KindBeginObject:
+		return json.UnmarshalDecode(dec, &t.NullTime)
 
 	default:
 		return fmt.Errorf("unexpected token unmarshalling null.Time: %s", dec.PeekKind())
