@@ -1,10 +1,10 @@
 package null
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"math"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -79,22 +79,22 @@ func TestUnmarshalFloat(t *testing.T) {
 		},
 		{
 			in:         []byte{},
-			expErrType: reflect.TypeOf((*json.SyntaxError)(nil)),
+			expErrType: reflect.TypeOf((*jsontext.SyntacticError)(nil)),
 		},
 		{
 			in: nullJSON,
 		},
 		{
 			in:         boolJSON,
-			expErrType: reflect.TypeOf((*strconv.NumError)(nil)),
+			expErrType: reflect.TypeOf((*json.SemanticError)(nil)),
 		},
 		{
 			in:         invalidJSON,
-			expErrType: reflect.TypeOf((*json.SyntaxError)(nil)),
+			expErrType: reflect.TypeOf((*json.SemanticError)(nil)),
 		},
 		{
 			in:         []byte(`{"Float64": true, "Valid": true}`),
-			expErrType: reflect.TypeOf((*json.UnmarshalTypeError)(nil)),
+			expErrType: reflect.TypeOf((*json.SemanticError)(nil)),
 		},
 	}
 
@@ -132,8 +132,8 @@ func BenchmarkFloatUnmarshal(b *testing.B) {
 	for _, test := range tests {
 		b.Run(string(test), func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
-				var ii Float
+			var ii Float
+			for b.Loop() {
 				if err := json.Unmarshal(test, &ii); err != nil {
 					b.Fatal(err)
 				}
@@ -248,13 +248,13 @@ func TestFloatScan(t *testing.T) {
 
 func TestFloatInfNaN(t *testing.T) {
 	nan := NewFloat(math.NaN(), true)
-	_, err := nan.MarshalJSON()
+	_, err := json.Marshal(nan)
 	if err == nil {
 		t.Error("expected error for NaN, got nil")
 	}
 
 	inf := NewFloat(math.Inf(1), true)
-	_, err = inf.MarshalJSON()
+	_, err = json.Marshal(inf)
 	if err == nil {
 		t.Error("expected error for Inf, got nil")
 	}

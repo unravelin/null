@@ -35,17 +35,17 @@ func TestUnmarshalTimeJSON(t *testing.T) {
 	var fromObject Time
 	err = json.Unmarshal(timeObject, &fromObject)
 	if err == nil {
-		panic("expected error")
+		t.Fatal("expected error")
 	}
 
 	var nullFromObj Time
 	err = json.Unmarshal(nullObject, &nullFromObj)
 	if err == nil {
-		panic("expected error")
+		t.Fatal("expected error")
 	}
 
 	var invalid Time
-	err = invalid.UnmarshalJSON(invalidJSON)
+	err = json.Unmarshal(invalidJSON, &invalid)
 	var syntaxError *json.SyntaxError
 	if !errors.As(err, &syntaxError) {
 		t.Errorf("expected wrapped json.SyntaxError, not %T", err)

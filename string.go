@@ -5,9 +5,9 @@
 package null
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 )
 
@@ -58,36 +58,36 @@ func (s String) ValueOrZero() string {
 	return s.String
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-// It supports string and null input. Blank string input does not produce a null String.
-func (s *String) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
-		s.Valid = false
-		return nil
+func (s String) MarshalJSONTo(enc *jsontext.Encoder) error {
+	if !s.Valid {
+		return enc.WriteToken(jsontext.Null)
 	}
-
-	if data[0] == '{' {
-		if err := json.Unmarshal(data, &s.NullString); err != nil {
-			return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)
-		}
-		return nil
-	}
-
-	if err := json.Unmarshal(data, &s.String); err != nil {
-		return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)
-	}
-
-	s.Valid = true
-	return nil
+	return enc.WriteToken(jsontext.String(s.String))
 }
 
-// MarshalJSON implements json.Marshaler.
-// It will encode null if this String is null.
-func (s String) MarshalJSON() ([]byte, error) {
-	if !s.Valid {
-		return nullLiteral, nil
+func (s *String) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	switch dec.PeekKind() {
+	case jsontext.KindNull:
+		if err := dec.SkipValue(); err != nil {
+			return fmt.Errorf("reading null for null.String: %w", err)
+		}
+		*s = String{}
+		return nil
+
+	case jsontext.KindString:
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading string for null.String: %w", err)
+		}
+		*s = S(tok.String())
+		return nil
+
+	case jsontext.KindBeginObject:
+		return json.UnmarshalDecode(dec, &s.NullString)
+
+	default:
+		return fmt.Errorf("unexpected token unmarshalling null.String: %s", dec.PeekKind())
 	}
-	return json.Marshal(s.String)
 }
 
 // MarshalText implements encoding.TextMarshaler.

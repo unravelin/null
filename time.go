@@ -1,10 +1,10 @@
 package null
 
 import (
-	"bytes"
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"time"
 )
@@ -59,29 +59,38 @@ func (t Time) ValueOrZero() time.Time {
 	return t.Time
 }
 
-// MarshalJSON implements json.Marshaler.
-// It will encode null if this time is null.
-func (t Time) MarshalJSON() ([]byte, error) {
+func (t Time) MarshalJSONTo(enc *jsontext.Encoder) error {
 	if !t.Valid {
-		return nullLiteral, nil
+		return enc.WriteToken(jsontext.Null)
 	}
-	return t.Time.MarshalJSON()
+
+	buf := enc.AvailableBuffer()
+	buf = append(buf, '"')
+	buf = t.Time.AppendFormat(buf, time.RFC3339Nano)
+	buf = append(buf, '"')
+	return enc.WriteValue(buf)
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-// It supports string and null input.
-func (t *Time) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) {
-		t.Valid = false
+func (t *Time) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	switch dec.PeekKind() {
+	case jsontext.KindNull:
+		_, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading null for null.Time: %w", err)
+		}
+		*t = Time{}
 		return nil
-	}
 
-	if err := json.Unmarshal(data, &t.Time); err != nil {
-		return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)
-	}
+	case jsontext.KindString:
+		err := json.UnmarshalDecode(dec, &t.Time)
+		t.Valid = err == nil
+		return err
 
-	t.Valid = true
-	return nil
+	// Note that Time is different and we don't support decoding from an object
+
+	default:
+		return fmt.Errorf("unexpected token unmarshalling null.Time: %s", dec.PeekKind())
+	}
 }
 
 // MarshalText implements encoding.TextMarshaler.

@@ -2,10 +2,10 @@ package bench
 
 import (
 	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/philpearl/plenc"
 	plnull "github.com/philpearl/plenc/null"
 	"github.com/unravelin/null"
@@ -53,41 +53,47 @@ func BenchmarkSerialisation(b *testing.B) {
 	b.Run("plenc", func(b *testing.B) {
 		plnull.RegisterCodecs()
 		b.ReportAllocs()
-		b.RunParallel(func(pb *testing.PB) {
-			var data []byte
-			for pb.Next() {
-				var err error
-				data, err = plenc.Marshal(data[:0], &in)
-				if err != nil {
-					b.Fatal(err)
-				}
-				var out pltest
-				if err := plenc.Unmarshal(data, &out); err != nil {
-					b.Fatal(err)
-				}
+
+		var data []byte
+		for b.Loop() {
+			var err error
+			data, err = plenc.Marshal(data[:0], &in)
+			if err != nil {
+				b.Fatal(err)
 			}
-		})
+			var out pltest
+			if err := plenc.Unmarshal(data, &out); err != nil {
+				b.Fatal(err)
+			}
+		}
 	})
 
 	b.Run("json", func(b *testing.B) {
 		b.ReportAllocs()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				data, _ := json.Marshal(&in)
-				var out pltest
-				json.Unmarshal(data, &out)
+		for b.Loop() {
+			data, err := json.Marshal(&in)
+			if err != nil {
+				b.Fatal(err)
 			}
-		})
+
+			var out pltest
+			if err := json.Unmarshal(data, &out); err != nil {
+				b.Fatal(err)
+			}
+		}
 	})
 
-	b.Run("jsoniter", func(b *testing.B) {
+	b.Run("jsonv2", func(b *testing.B) {
 		b.ReportAllocs()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				data, _ := jsoniter.Marshal(&in)
-				var out pltest
-				jsoniter.Unmarshal(data, &out)
+		for b.Loop() {
+			data, err := jsonv2.Marshal(&in)
+			if err != nil {
+				b.Fatal(err)
 			}
-		})
+			var out pltest
+			if err := jsonv2.Unmarshal(data, &out); err != nil {
+				b.Fatal(err)
+			}
+		}
 	})
 }

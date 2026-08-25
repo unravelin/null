@@ -1,14 +1,12 @@
 package null
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"math"
-	"reflect"
 	"strconv"
-	"unsafe"
 )
 
 // Float is a nullable float64.
@@ -54,51 +52,76 @@ func (f Float) ValueOrZero() float64 {
 	return f.Float64
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-// It supports number and null input.
-// 0 will not be considered a null Float.
-// It also supports unmarshalling a sql.NullFloat64.
-func (f *Float) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
-		f.Valid = false
-		return nil
+func (f Float) MarshalJSONTo(enc *jsontext.Encoder) error {
+	if !f.Valid {
+		return enc.WriteToken(jsontext.Null)
+	}
+	if math.IsInf(f.Float64, 0) || math.IsNaN(f.Float64) {
+		return &json.SemanticError{
+			Err: fmt.Errorf("cannot marshal inf or nan"),
+		}
 	}
 
-	if data[0] == '{' {
-		// Try the struct form of Float.
-		type basicFloat Float
-		var bf basicFloat
-		if json.Unmarshal(data, &bf) == nil {
-			*f = Float(bf)
-			return nil
-		}
+	return enc.WriteToken(jsontext.Float(f.Float64))
+}
 
-		// Try the struct form of Float, but with a string Float64.
-		var sf struct {
-			Float64 string
-			Valid   bool
+func (f *Float) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	switch kind := dec.PeekKind(); kind {
+	case jsontext.KindNull:
+		_, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading null for null.Float: %w", err)
 		}
-		if err := json.Unmarshal(data, &sf); err != nil {
+		*f = Float{}
+		return nil
+
+	case jsontext.KindNumber:
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading number for null.Float: %w", err)
+		}
+		fval, err := tok.Float()
+		if err != nil {
+			return fmt.Errorf("parsing number as float: %w", err)
+		}
+		*f = F(fval)
+		return nil
+
+	case jsontext.KindString:
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading string for float")
+		}
+		return json.Unmarshal([]byte(tok.String()), f, dec.Options())
+
+	case jsontext.KindBeginObject:
+		// We want to try two different things here, so we extract the object
+		// value
+		val, err := dec.ReadValue()
+		if err != nil {
 			return err
 		}
-		f.Valid = sf.Valid
-		if sf.Valid {
-			var err error
-			f.Float64, err = strconv.ParseFloat(sf.Float64, 64)
-			f.Valid = (err == nil)
+		var sq sql.NullFloat64
+		if err := json.Unmarshal(val, &sq, dec.Options()); err == nil {
+			f.NullFloat64 = sq
+			return nil
 		}
+		// Try a string version
+		var sf struct {
+			Float64 float64 `json:",string"`
+			Valid   bool
+		}
+		if err := json.Unmarshal(val, &sf, dec.Options()); err != nil {
+			return err
+		}
+		f.NullFloat64 = sql.NullFloat64(sf)
 		return nil
-	}
 
-	// BQ sends numbers as strings. We can strip quotes on simple strings
-	if data[0] == '"' {
-		data = bytes.Trim(data, `"`)
+	default:
+		return &json.SemanticError{
+			Err: fmt.Errorf("unexpected token unmarshalling null.Float: %s", kind),
+		}
 	}
-
-	var err error
-	f.Float64, err = strconv.ParseFloat(*(*string)(unsafe.Pointer(&data)), 64)
-	f.Valid = (err == nil)
-	return err
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
@@ -117,21 +140,6 @@ func (f *Float) UnmarshalText(text []byte) error {
 	}
 	f.Valid = true
 	return err
-}
-
-// MarshalJSON implements json.Marshaler.
-// It will encode null if this Float is null.
-func (f Float) MarshalJSON() ([]byte, error) {
-	if !f.Valid {
-		return nullLiteral, nil
-	}
-	if math.IsInf(f.Float64, 0) || math.IsNaN(f.Float64) {
-		return nil, &json.UnsupportedValueError{
-			Value: reflect.ValueOf(f.Float64),
-			Str:   strconv.FormatFloat(f.Float64, 'g', -1, 64),
-		}
-	}
-	return strconv.AppendFloat(nil, f.Float64, 'f', -1, 64), nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
