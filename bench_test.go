@@ -1,45 +1,61 @@
 package null
 
 import (
+	"encoding/json/v2"
 	"testing"
 )
 
 func BenchmarkIntUnmarshalJSON(b *testing.B) {
 	input := []byte("123456")
 	var nullable Int
-	for n := 0; n < b.N; n++ {
-		nullable.UnmarshalJSON(input)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := json.Unmarshal(input, &nullable); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkIntStringUnmarshalJSON(b *testing.B) {
 	input := []byte(`"123456"`)
 	var nullable String
-	for n := 0; n < b.N; n++ {
-		nullable.UnmarshalJSON(input)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := json.Unmarshal(input, &nullable); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkNullIntUnmarshalJSON(b *testing.B) {
 	input := nullLiteral
 	var nullable Int
-	for n := 0; n < b.N; n++ {
-		nullable.UnmarshalJSON(input)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := json.Unmarshal(input, &nullable); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkStringUnmarshalJSON(b *testing.B) {
 	input := []byte(`"hello"`)
 	var nullable String
-	for n := 0; n < b.N; n++ {
-		nullable.UnmarshalJSON(input)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := json.Unmarshal(input, &nullable); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkNullStringUnmarshalJSON(b *testing.B) {
 	input := nullLiteral
 	var nullable String
-	for n := 0; n < b.N; n++ {
-		nullable.UnmarshalJSON(input)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := json.Unmarshal(input, &nullable); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

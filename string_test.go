@@ -1,7 +1,7 @@
 package null
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"io"
 	"testing"
@@ -56,7 +56,7 @@ func TestUnmarshalString(t *testing.T) {
 	}
 
 	var empty String
-	maybePanic(empty.UnmarshalJSON([]byte{}))
+	json.Unmarshal([]byte(`{}`), &empty)
 	assertNullStr(t, empty, "null json")
 
 	var null String
@@ -72,8 +72,8 @@ func TestUnmarshalString(t *testing.T) {
 	assertNullStr(t, badType, "wrong type json")
 
 	var invalid String
-	err = invalid.UnmarshalJSON(invalidJSON)
-	var syntaxError *json.SyntaxError
+	err = json.Unmarshal(invalidJSON, &invalid)
+	var syntaxError *json.SemanticError
 	if !errors.As(err, &syntaxError) {
 		t.Errorf("expected wrapped json.SyntaxError, not %T", err)
 	}
@@ -258,9 +258,8 @@ func BenchmarkMarshalNullString(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(b *testing.PB) {
 		var ns String
-		enc := json.NewEncoder(io.Discard)
 		for b.Next() {
-			enc.Encode(&ns)
+			json.MarshalWrite(io.Discard, &ns)
 		}
 	})
 }

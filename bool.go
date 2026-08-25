@@ -1,9 +1,9 @@
 package null
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 )
@@ -58,28 +58,36 @@ func (b Bool) ValueOrZero() bool {
 	return b.Valid && b.Bool
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-// It supports number and null input.
-// 0 will not be considered a null Bool.
-func (b *Bool) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
-		b.Valid = false
-		return nil
+func (b Bool) MarshalJSONTo(enc *jsontext.Encoder) error {
+	if !b.Valid {
+		return enc.WriteToken(jsontext.Null)
 	}
+	return enc.WriteToken(jsontext.Bool(b.Bool))
+}
 
-	if data[0] == '{' {
-		if err := json.Unmarshal(data, &b.NullBool); err != nil {
-			return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)
+func (b *Bool) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	switch dec.PeekKind() {
+	case jsontext.KindNull:
+		if err := dec.SkipValue(); err != nil {
+			return fmt.Errorf("reading null for null.Bool: %w", err)
 		}
+		*b = Bool{}
 		return nil
-	}
 
-	if err := json.Unmarshal(data, &b.Bool); err != nil {
-		return fmt.Errorf("null: couldn't unmarshal JSON: %w", err)
-	}
+	case jsontext.KindFalse, jsontext.KindTrue:
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading bool for null.Bool: %w", err)
+		}
+		*b = B(tok.Bool())
+		return nil
 
-	b.Valid = true
-	return nil
+	case jsontext.KindBeginObject:
+		return json.UnmarshalDecode(dec, &b.NullBool)
+
+	default:
+		return fmt.Errorf("unexpected token unmarshalling null.Bool: %s", dec.PeekKind())
+	}
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
@@ -100,18 +108,6 @@ func (b *Bool) UnmarshalText(text []byte) error {
 	}
 	b.Valid = true
 	return nil
-}
-
-// MarshalJSON implements json.Marshaler.
-// It will encode null if this Bool is null.
-func (b Bool) MarshalJSON() ([]byte, error) {
-	if !b.Valid {
-		return nullLiteral, nil
-	}
-	if !b.Bool {
-		return falseLiteral, nil
-	}
-	return trueLiteral, nil
 }
 
 // MarshalText implements encoding.TextMarshaler.

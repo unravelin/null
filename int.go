@@ -1,12 +1,11 @@
 package null
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"strconv"
-	"unsafe"
 )
 
 // Int is an nullable int64.
@@ -52,49 +51,72 @@ func (i Int) ValueOrZero() int64 {
 	return i.Int64
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-// It supports number, string, and null input.
-// 0 will not be considered a null Int.
-func (i *Int) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, nullLiteral) || len(data) == 0 {
-		i.Valid = false
-		return nil
+func (i Int) MarshalJSONTo(enc *jsontext.Encoder) error {
+	if !i.Valid {
+		return enc.WriteToken(jsontext.Null)
 	}
+	return enc.WriteToken(jsontext.Int(i.Int64))
+}
 
-	if data[0] == '{' {
-		// Try the struct form of Int.
-		type basicInt Int
-		var ii basicInt
-		if json.Unmarshal(data, &ii) == nil {
-			*i = Int(ii)
-			return nil
+func (i *Int) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	switch kind := dec.PeekKind(); kind {
+	case jsontext.KindNull:
+		if err := dec.SkipValue(); err != nil {
+			return fmt.Errorf("reading null for null.Int: %w", err)
 		}
+		*i = Int{}
+		return nil
 
-		// Try a string version
-		var si struct {
-			Int64 string
-			Valid bool
+	case jsontext.KindNumber:
+		val, err := dec.ReadValue()
+		if err != nil {
+			return fmt.Errorf("reading number for null.Int: %w", err)
 		}
-		if err := json.Unmarshal(data, &si); err != nil {
+		// If we use the inbuilt stuff it will silently convert floats to ints,
+		// which is not what we want.
+		ival, err := strconv.ParseInt(val.String(), 10, 64)
+		if err != nil {
+			return fmt.Errorf("parsing number for null.Int: %w", err)
+		}
+		*i = I(ival)
+		return nil
+
+	case jsontext.KindString:
+		// We want to be able to read stringified integers.
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("reading string for int")
+		}
+		return json.Unmarshal([]byte(tok.String()), i, dec.Options())
+
+	case jsontext.KindBeginObject:
+		// We want to try two different things here, so we extract the object
+		// value
+		val, err := dec.ReadValue()
+		if err != nil {
 			return err
 		}
-		i.Valid = si.Valid
-		if !si.Valid {
+		var sq sql.NullInt64
+		if err := json.Unmarshal(val, &sq, dec.Options()); err == nil {
+			i.NullInt64 = sq
 			return nil
 		}
-		var err error
-		i.Int64, err = strconv.ParseInt(si.Int64, 10, 64)
-		i.Valid = (err == nil)
-		return err
-	}
+		// Try a string version
+		var si struct {
+			Int64 int64 `json:",string"`
+			Valid bool
+		}
+		if err := json.Unmarshal(val, &si, dec.Options()); err != nil {
+			return err
+		}
+		i.NullInt64 = sql.NullInt64(si)
+		return nil
 
-	if data[0] == '"' {
-		data = bytes.Trim(data, `"`)
+	default:
+		return &json.SemanticError{
+			Err: fmt.Errorf("unexpected token unmarshalling null.Int: %s", kind),
+		}
 	}
-	var err error
-	i.Int64, err = strconv.ParseInt(*(*string)(unsafe.Pointer(&data)), 10, 64)
-	i.Valid = (err == nil)
-	return err
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
@@ -113,15 +135,6 @@ func (i *Int) UnmarshalText(text []byte) error {
 	}
 	i.Valid = true
 	return nil
-}
-
-// MarshalJSON implements json.Marshaler.
-// It will encode null if this Int is null.
-func (i Int) MarshalJSON() ([]byte, error) {
-	if !i.Valid {
-		return nullLiteral, nil
-	}
-	return strconv.AppendInt(nil, i.Int64, 10), nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
