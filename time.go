@@ -74,8 +74,7 @@ func (t Time) MarshalJSONTo(enc *jsontext.Encoder) error {
 func (t *Time) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 	switch dec.PeekKind() {
 	case jsontext.KindNull:
-		_, err := dec.ReadToken()
-		if err != nil {
+		if err := dec.SkipValue(); err != nil {
 			return fmt.Errorf("reading null for null.Time: %w", err)
 		}
 		*t = Time{}
